@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Water Conservation Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+  <style>
+    :root {
+      --primary-blue: #22d3ee;
+      --secondary-teal: #2dd4bf;
+    }
+
+    .wave-bg {
+      background: linear-gradient(135deg, #aeeeee, #e0f7fa);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .wave-bg::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 200%;
+      height: 12em;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%2322d3ee' fill-opacity='0.1' d='M0 64L48 80C96 96 192 128 288 128C384 128 480 96 576 85.3C672 75 768 85 864 90.7C960 96 1056 96 1152 85.3C1248 75 1344 53 1392 42.7L1440 32L1440 0L1392 0C1344 0 1248 0 1152 0C1056 0 960 0 864 0C768 0 672 0 576 0C480 0 384 0 288 0C192 0 96 0 48 0L0 0Z'%3E%3C/path%3E%3C/svg%3E");
+      animation: wave 12s linear infinite;
+    }
+
+    @keyframes wave {
+      0% {
+        transform: translateX(0);
+      }
+
+      50% {
+        transform: translateX(-25%);
+      }
+
+      100% {
+        transform: translateX(-50%);
+      }
+    }
+
+    .dashboard-card {
+      @apply bg-white p-6 rounded-lg shadow-md;
+    }
+  </style>
+</head>
+
+<body class="font-sans">
+  <nav class="bg-white shadow-md py-4 sticky top-0 z-20">
+    <div class="container mx-auto flex justify-between items-center px-4">
+      <h1 class="text-xl font-bold text-cyan-600">AquaTrack</h1>
+      <ul class="flex space-x-4 text-gray-600 font-medium">
+        <li><a href="#" class="hover:text-cyan-600">Dashboard</a></li>
+        <li><a href="#" class="hover:text-cyan-600">Reports</a></li>
+        <li><a href="#" class="hover:text-cyan-600">Settings</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="wave-bg min-h-screen">
+    <div class="container mx-auto px-4 py-8 relative z-10">
+      <div class="text-center py-16">
+        <h1 class="text-4xl font-bold text-cyan-600 mb-4">Enhanced AquaTrack Dashboard</h1>
+        <p class="text-lg text-gray-600 mb-6">Real-time analytics and water-saving insights</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="dashboard-card text-center">
+            <h2 class="text-xl font-semibold mb-2">Today's Usage</h2>
+            <p class="text-3xl font-bold text-cyan-600">145 L</p>
+          </div>
+          <div class="dashboard-card text-center">
+            <h2 class="text-xl font-semibold mb-2">Weekly Average</h2>
+            <p class="text-3xl font-bold text-teal-600">1023 L</p>
+          </div>
+          <div class="dashboard-card text-center">
+            <h2 class="text-xl font-semibold mb-2">Monthly Target</h2>
+            <p class="text-3xl font-bold text-indigo-600">3000 L</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="dashboard-card">
+          <h2 class="text-lg font-semibold mb-4">Daily Usage</h2>
+          <canvas id="usageChart" height="120"></canvas>
+        </div>
+        <div class="dashboard-card">
+          <h2 class="text-lg font-semibold mb-4">Water Quality Index</h2>
+          <canvas id="qualityChart" height="120"></canvas>
+        </div>
+      </div>
+
+      <div class="dashboard-card mt-6">
+        <h2 class="text-lg font-semibold mb-4">Monthly Comparison</h2>
+        <canvas id="monthlyChart" height="120"></canvas>
+      </div>
+
+      <footer class="text-center text-sm text-gray-500 py-4">
+        &copy; 2025 AquaTrack. All rights reserved.
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const ctxUsage = document.getElementById('usageChart').getContext('2d');
+    const ctxQuality = document.getElementById('qualityChart').getContext('2d');
+    const ctxMonthly = document.getElementById('monthlyChart').getContext('2d');
+
+    new Chart(ctxUsage, {
+      type: 'line',
+      data: {
+        labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+        datasets: [{
+          label: 'Usage (L)',
+          data: [150, 180, 130, 170, 160, 190, 200],
+          borderColor: '#22d3ee',
+          backgroundColor: 'rgba(34, 211, 238, 0.1)',
+          tension: 0.4,
+          fill: true,
+        }]
+      },
+      options: { responsive: true, plugins: { legend: { display: false } } }
+    });
+
+    new Chart(ctxQuality, {
+      type: 'bar',
+      data: {
+        labels: ['pH', 'Turbidity', 'Chlorine', 'Nitrate'],
+        datasets: [{
+          label: 'Quality Level',
+          data: [7.2, 1.8, 2.1, 1.3],
+          backgroundColor: ['#22d3ee', '#2dd4bf', '#3b82f6', '#6366f1']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false }
+        },
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+
+    new Chart(ctxMonthly, {
+      type: 'bar',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr'],
+        datasets: [{
+          label: 'Monthly Usage (L)',
+          data: [2900, 3100, 2800, 3000],
+          backgroundColor: '#2dd4bf'
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          y: { beginAtZero: true }
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

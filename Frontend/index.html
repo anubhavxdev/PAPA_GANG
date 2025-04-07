@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaTrack - Smart Water Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.7/dist/axios.min.js"></script>
+    <style>
+        :root {
+            --primary-blue: #22d3ee;
+            --secondary-teal: #2dd4bf;
+        }
+        .wave-bg {
+            background: linear-gradient(135deg, #aeeeee, #e0f7fa);
+            position: relative;
+            overflow: hidden;
+        }
+        .wave-bg::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 200%;
+            height: 12em;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120'%3E%3Cpath fill='%2322d3ee' fill-opacity='0.1' d='M0 64L48 80C96 96 192 128 288 128C384 128 480 96 576 85.3C672 75 768 85 864 90.7C960 96 1056 96 1152 85.3C1248 75 1344 53 1392 42.7L1440 32L1440 0L1392 0C1344 0 1248 0 1152 0C1056 0 960 0 864 0C768 0 672 0 576 0C480 0 384 0 288 0C192 0 96 0 48 0L0 0Z'%3E%3C/path%3E%3C/svg%3E");
+            animation: wave 12s linear infinite;
+        }
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            50% { transform: translateX(-25%); }
+            100% { transform: translateX(-50%); }
+        }
+        .water-drop {
+            animation: drip 2s infinite;
+        }
+        @keyframes drip {
+            0% { transform: translateY(0); opacity: 1; }
+            50% { transform: translateY(20px); opacity: 0.8; }
+            100% { transform: translateY(40px); opacity: 0; }
+        }
+        .btn-primary {
+            background-color: #22d3ee;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0ea5e9;
+        }
+        .btn-secondary {
+            background-color: #2dd4bf;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .btn-secondary:hover {
+            background-color: #0d9488;
+        }
+        .form-input {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 0.375rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus {
+            border-color: #22d3ee;
+        }
+        .dashboard-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .feature-card {
+            background-color: white;
+            padding: 1.5rem;
+            border-radius: 1rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .quality-metric {
+            background-color: #f0fdf4;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            text-align: center;
+        }
+        .metric-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body class="font-sans">
+  
+    <body class="font-sans">
+        <div class="wave-bg min-h-screen">
+            <div class="container mx-auto px-4 py-8 relative z-10">
+              
+                <nav class="flex justify-between items-center mb-8">
+                    <h1 class="text-3xl font-bold text-cyan-600 flex items-center">
+                        <svg class="water-drop w-8 h-8 mr-2" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2L12 2C15.09 2 17.71 4.36 18.72 7.24C18.9 7.73 19 8.29 19 8.86C19 10.38 18.28 11.84 17.05 12.77L12 16.77L6.95 12.77C5.72 11.84 5 10.38 5 8.86C5 6.64 6.5 4.76 8.57 3.78C9.27 3.28 10.11 3 11 3H12V2Z"/>
+                        </svg>
+                        AquaTrack
+                    </h1>
+                    <div id="authButtons" class="space-x-4">
+                        <button onclick="showView('login')" class="btn-primary">Login</button>
+                        <button onclick="showView('register')" class="btn-secondary">Register</button>
+                    </div>
+                    <div id="userMenu" class="hidden">
+                        <button onclick="handleLogout()" class="btn-secondary">Logout</button>
+                    </div>
+                </nav>
+    
+          
+                <div id="viewsContainer">
+                    
+<section id="landing" class="text-center py-16">
+    <div class="max-w-4xl mx-auto">
+        <h2 class="text-4xl font-bold mb-6 text-cyan-700">Smart Water Conservation Made Simple</h2>
+
+     
+        <div class="my-10 rounded-2xl overflow-hidden shadow-xl transform transition-transform duration-500 hover:scale-105 bg-white/70 backdrop-blur-sm p-4">
+            <img src="../a-moment-of-conservation-save-water-save-nature-g3cqimhtr3yxjm5z.jpg" alt="Save Water, Save Nature" class="rounded-xl w-full object-cover h-auto">
+            <p class="text-center text-gray-600 mt-4 text-sm italic">“A moment of conservation – save water, save nature.”</p>
+        </div>
+
+        <p class="text-lg text-gray-600 mb-8">Monitor, manage, and optimize your water usage with real-time insights and AI-powered recommendations.</p>
+
+        <div class="grid md:grid-cols-3 gap-8 mb-12">
+            <div class="feature-card">
+                <h3>📊 Real-Time Monitoring</h3>
+                <p>Track water usage with live updates</p>
+            </div>
+            <div class="feature-card">
+                <h3>🎯 Smart Goals</h3>
+                <p>Set and achieve conservation targets</p>
+            </div>
+            <div class="feature-card">
+                <h3>💡 AI Recommendations</h3>
+                <p>Personalized water-saving tips</p>
+            </div>
+        </div>
+
+        <button onclick="showView('register')" class="btn-primary px-8 py-3 text-lg">Get Started</button>
+    </div>
+</section>
+
+    
+             
+                    <section id="dashboard" class="hidden">
+             
+                        <div class="flex justify-between items-center mb-8">
+                            <h2 class="text-2xl font-bold text-cyan-700">Water Management Dashboard</h2>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-sm text-gray-600">Welcome, <span id="userName"></span></div>
+                            </div>
+                        </div>
+    
+             
+                        <div class="grid lg:grid-cols-3 gap-6">
+                    
+                            <div class="lg:col-span-2 space-y-6">
+                       
+                                <div class="dashboard-card">
+                                    <h3 class="text-lg font-semibold mb-4">Live Water Usage</h3>
+                                    <canvas id="realTimeChart"></canvas>
+                                </div>
+    
+                         
+                                <div class="dashboard-card">
+                                    <h3 class="text-lg font-semibold mb-4">Usage History</h3>
+                                    <canvas id="historicalChart"></canvas>
+                                </div>
+                            </div>
+    
+                           
+                            <div class="space-y-6">
+                              
+                                <div class="dashboard-card">
+                                    <h3 class="text-lg font-semibold mb-4">Conservation Goals</h3>
+                                    <div id="goalsList" class="space-y-3"></div>
+                                    <form id="goalForm" onsubmit="addGoal(event)" class="mt-4">
+                                        <div class="flex gap-2">
+                                            <input type="number" placeholder="Target (liters)" class="form-input flex-1" required>
+                                            <button type="submit" class="btn-primary">Set Goal</button>
+                                        </div>
+                                    </form>
+                                </div>
+    
+                                <div class="dashboard-card">
+                                    <h3 class="text-lg font-semibold mb-4">Connected Devices</h3>
+                                    <div id="devicesList" class="space-y-2"></div>
+                                    <button onclick="showDeviceModal()" class="btn-secondary w-full mt-4">
+                                        + Add Device
+                                    </button>
+                                </div>
+    
+                            
+                                <div class="dashboard-card">
+                                    <h3 class="text-lg font-semibold mb-4">Water Quality</h3>
+                                    <div class="grid grid-cols-2 gap-4">
+                                        <div class="quality-metric">
+                                            <div class="metric-label">pH Level</div>
+                                            <div class="metric-value">7.2</div>
+                                            <div class="metric-status text-green-500">Optimal</div>
+                                        </div>
+                                        <div class="quality-metric">
+                                            <div class="metric-label">Turbidity</div>
+                                            <div class="metric-value">0.8 NTU</div>
+                                            <div class="metric-status text-green-500">Clear</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+    
+                       
+                        <div class="mt-8 dashboard-card">
+                            <h3 class="text-lg font-semibold mb-4">Personalized Recommendations</h3>
+                            <div id="recommendations" class="grid md:grid-cols-2 gap-4"></div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+    
+         
+            <div id="deviceModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                <div class="bg-white rounded-lg p-6 w-96">
+                    <h3 class="text-xl font-bold mb-4">Connect New Device</h3>
+                    <form id="deviceForm" onsubmit="addDevice(event)" class="space-y-4">
+                        <input type="text" placeholder="Device Name" class="form-input" required>
+                        <select class="form-input" required>
+                            <option value="">Select Device Type</option>
+                            <option>Smart Meter</option>
+                            <option>Irrigation System</option>
+                            <option>Water Heater</option>
+                        </select>
+                        <div class="flex justify-end space-x-3">
+                            <button type="button" onclick="hideDeviceModal()" class="btn-secondary">Cancel</button>
+                            <button type="submit" class="btn-primary">Connect</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    <script>
+
+        function setupCharts() {
+            const realTimeCtx = document.getElementById('realTimeChart').getContext('2d');
+            realTimeChart = new Chart(realTimeCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 24 }, (_, i) => ${i}:00),
+                    datasets: [{
+                        label: 'Water Usage (L)',
+                        data: Array.from({ length: 24 }, () => Math.random() * 100),
+                        borderColor: '#22d3ee',
+                        backgroundColor: 'rgba(34, 211, 238, 0.2)',
+                        tension: 0.3,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+
+            const historicalCtx = document.getElementById('historicalChart').getContext('2d');
+            historicalChart = new Chart(historicalCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                    datasets: [{
+                        label: 'Liters Used',
+                        data: Array.from({ length: 7 }, () => Math.random() * 300),
+                        backgroundColor: '#2dd4bf'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
+   
+        function updateDashboard() {
+            updateDevicesList();
+            updateGoalsList();
+            updateRecommendations();
+        }
+
+        function updateDevicesList() {
+            const container = document.getElementById('devicesList');
+            container.innerHTML = '';
+            state.devices.forEach(device => {
+                const el = document.createElement('div');
+                el.className = 'bg-gray-100 p-2 rounded shadow';
+                el.textContent = ${device.name} (${device.type}) - ${device.status};
+                container.appendChild(el);
+            });
+        }
+
+        function updateGoalsList() {
+            const container = document.getElementById('goalsList');
+            container.innerHTML = '';
+            state.goals.forEach(goal => {
+                const progress = (goal.current / goal.target) * 100;
+                const bar = <div class="w-full bg-gray-200 rounded h-4 overflow-hidden">
+                                <div class="bg-cyan-500 h-full" style="width: ${progress}%"></div>
+                            </div>;
+                const el = document.createElement('div');
+                el.innerHTML = Goal: ${goal.target}L - Progress: ${goal.current}L${bar};
+                container.appendChild(el);
+            });
+        }
+
+        function updateRecommendations() {
+            const container = document.getElementById('recommendations');
+            container.innerHTML = '';
+            const tips = [...state.recommendations].sort(() => 0.5 - Math.random()).slice(0, 4);
+            tips.forEach(tip => {
+                const el = document.createElement('div');
+                el.className = 'p-4 bg-blue-50 rounded shadow';
+                el.textContent = tip;
+                container.appendChild(el);
+            });
+        }
+
+        function init() {
+            setupCharts();
+            updateDashboard();
+        }
+
+        
+        window.onload = init;
+    </script>
+</body>
+</html>
+"

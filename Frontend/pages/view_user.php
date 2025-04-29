@@ -14,11 +14,6 @@ if(!isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== 1){
     exit;
 }
 
-// Include config file
-require_once "config.php";
-// Include database connection check utility
-require_once "db_connection_check.php";
-
 // Check if user ID is provided
 if(!isset($_GET["id"]) || empty($_GET["id"])){
     header("location: admin.php?error=Invalid user ID");
@@ -26,122 +21,111 @@ if(!isset($_GET["id"]) || empty($_GET["id"])){
 }
 
 $user_id = $_GET["id"];
-$user = null;
+
+// Sample user data
+$pseudo_users = [
+    1 => [
+        'id' => 1,
+        'first_name' => 'Admin',
+        'last_name' => 'User',
+        'email' => 'admin@aquasave.com',
+        'location' => 'urban',
+        'user_type' => 'admin',
+        'is_admin' => 1,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-30 days'))
+    ],
+    2 => [
+        'id' => 2,
+        'first_name' => 'John',
+        'last_name' => 'Doe',
+        'email' => 'john@example.com',
+        'location' => 'suburban',
+        'user_type' => 'residential',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-25 days'))
+    ],
+    3 => [
+        'id' => 3,
+        'first_name' => 'Jane',
+        'last_name' => 'Smith',
+        'email' => 'jane@example.com',
+        'location' => 'urban',
+        'user_type' => 'commercial',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-20 days'))
+    ],
+    4 => [
+        'id' => 4,
+        'first_name' => 'Robert',
+        'last_name' => 'Johnson',
+        'email' => 'robert@example.com',
+        'location' => 'rural',
+        'user_type' => 'residential',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-15 days'))
+    ],
+    5 => [
+        'id' => 5,
+        'first_name' => 'Emily',
+        'last_name' => 'Williams',
+        'email' => 'emily@example.com',
+        'location' => 'suburban',
+        'user_type' => 'residential',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-10 days'))
+    ]
+];
+
+// Get user by ID or default to first user
+$user = isset($pseudo_users[$user_id]) ? $pseudo_users[$user_id] : $pseudo_users[1];
+
+// Generate sample water usage data
 $water_usage = [];
-$devices = [];
-$goals = [];
-
-// Try to fetch real data if database is connected
-if($is_db_connected) {
-    // Fetch user details
-    $sql = "SELECT * FROM users WHERE id = ?";
-    if($stmt = mysqli_prepare($conn, $sql)){
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
-        
-        if(mysqli_stmt_execute($stmt)){
-            $result = mysqli_stmt_get_result($stmt);
-            
-            if(mysqli_num_rows($result) == 1){
-                $user = mysqli_fetch_assoc($result);
-            } else {
-                header("location: admin.php?error=User not found");
-                exit;
-            }
-        } else {
-            header("location: admin.php?error=Something went wrong. Please try again later.");
-            exit;
-        }
-        
-        mysqli_stmt_close($stmt);
-    }
-
-    // Fetch user's water usage
-    $sql = "SELECT * FROM water_usage WHERE user_id = ? ORDER BY usage_date DESC";
-    if($stmt = mysqli_prepare($conn, $sql)){
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
-        if(mysqli_stmt_execute($stmt)){
-            $water_usage_result = mysqli_stmt_get_result($stmt);
-            $water_usage = mysqli_fetch_all($water_usage_result, MYSQLI_ASSOC);
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    // Fetch user's devices
-    $sql = "SELECT * FROM devices WHERE user_id = ?";
-    if($stmt = mysqli_prepare($conn, $sql)){
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
-        if(mysqli_stmt_execute($stmt)){
-            $devices_result = mysqli_stmt_get_result($stmt);
-            $devices = mysqli_fetch_all($devices_result, MYSQLI_ASSOC);
-        }
-        mysqli_stmt_close($stmt);
-    }
-
-    // Fetch user's goals
-    $sql = "SELECT * FROM goals WHERE user_id = ? ORDER BY end_date ASC";
-    if($stmt = mysqli_prepare($conn, $sql)){
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
-        if(mysqli_stmt_execute($stmt)){
-            $goals_result = mysqli_stmt_get_result($stmt);
-            $goals = mysqli_fetch_all($goals_result, MYSQLI_ASSOC);
-        }
-        mysqli_stmt_close($stmt);
-    }
+for($i = 0; $i < 5; $i++) {
+    $water_usage[] = [
+        'id' => $i + 1,
+        'user_id' => $user_id,
+        'usage_amount' => rand(50, 200) / 10,
+        'usage_date' => date('Y-m-d', strtotime("-$i days")),
+        'usage_type' => ['bathroom', 'kitchen', 'garden', 'laundry'][rand(0, 3)],
+        'created_at' => date('Y-m-d H:i:s', strtotime("-$i days"))
+    ];
 }
 
-// If no data from database or connection failed, use pseudo data
-if(!$user) {
-    // Get pseudo users from the utility function
-    $pseudo_users = get_pseudo_users();
-    
-    // Get user by ID or default to first user
-    $user = isset($pseudo_users[$user_id]) ? $pseudo_users[$user_id] : $pseudo_users[1];
-    
-    // Generate sample water usage data
-    for($i = 0; $i < 5; $i++) {
-        $water_usage[] = [
-            'id' => $i + 1,
-            'user_id' => $user_id,
-            'usage_amount' => rand(50, 200) / 10,
-            'usage_date' => date('Y-m-d', strtotime("-$i days")),
-            'usage_type' => ['bathroom', 'kitchen', 'garden', 'laundry'][rand(0, 3)],
-            'created_at' => date('Y-m-d H:i:s', strtotime("-$i days"))
-        ];
-    }
-    
-    // Generate sample devices data
-    $device_types = ['smart meter', 'water filter', 'irrigation system', 'leak detector'];
-    for($i = 0; $i < 3; $i++) {
-        $devices[] = [
-            'id' => $i + 1,
-            'user_id' => $user_id,
-            'device_name' => $device_types[$i] . ' ' . ($i + 1),
-            'device_type' => $device_types[$i],
-            'installation_date' => date('Y-m-d', strtotime("-" . (30 + $i * 10) . " days")),
-            'status' => ['active', 'inactive', 'maintenance'][rand(0, 2)],
-            'created_at' => date('Y-m-d H:i:s', strtotime("-" . (30 + $i * 10) . " days"))
-        ];
-    }
-    
-    // Generate sample goals data
-    $goal_descriptions = [
-        'Reduce daily water usage by 10%',
-        'Install water-efficient fixtures',
-        'Fix all leaks in the house'
+// Generate sample devices data
+$devices = [];
+$device_types = ['smart meter', 'water filter', 'irrigation system', 'leak detector'];
+for($i = 0; $i < 3; $i++) {
+    $devices[] = [
+        'id' => $i + 1,
+        'user_id' => $user_id,
+        'device_name' => $device_types[$i] . ' ' . ($i + 1),
+        'device_type' => $device_types[$i],
+        'installation_date' => date('Y-m-d', strtotime("-" . (30 + $i * 10) . " days")),
+        'status' => ['active', 'inactive', 'maintenance'][rand(0, 2)],
+        'created_at' => date('Y-m-d H:i:s', strtotime("-" . (30 + $i * 10) . " days"))
     ];
-    
-    for($i = 0; $i < 3; $i++) {
-        $goals[] = [
-            'id' => $i + 1,
-            'user_id' => $user_id,
-            'goal_description' => $goal_descriptions[$i],
-            'target_amount' => rand(100, 500) / 10,
-            'start_date' => date('Y-m-d', strtotime("-" . (60 + $i * 10) . " days")),
-            'end_date' => date('Y-m-d', strtotime("+" . (30 + $i * 10) . " days")),
-            'status' => ['in progress', 'completed', 'pending'][rand(0, 2)],
-            'created_at' => date('Y-m-d H:i:s', strtotime("-" . (60 + $i * 10) . " days"))
-        ];
-    }
+}
+
+// Generate sample goals data
+$goals = [];
+$goal_descriptions = [
+    'Reduce daily water usage by 10%',
+    'Install water-efficient fixtures',
+    'Fix all leaks in the house'
+];
+
+for($i = 0; $i < 3; $i++) {
+    $goals[] = [
+        'id' => $i + 1,
+        'user_id' => $user_id,
+        'goal_description' => $goal_descriptions[$i],
+        'target_amount' => rand(100, 500) / 10,
+        'start_date' => date('Y-m-d', strtotime("-" . (60 + $i * 10) . " days")),
+        'end_date' => date('Y-m-d', strtotime("+" . (30 + $i * 10) . " days")),
+        'status' => ['in progress', 'completed', 'pending'][rand(0, 2)],
+        'created_at' => date('Y-m-d H:i:s', strtotime("-" . (60 + $i * 10) . " days"))
+    ];
 }
 ?>
 
@@ -225,7 +209,7 @@ if(!$user) {
         </div>
     </nav>
 
-    <!-- User Details Section -->
+    <!-- Main Content -->
     <section class="pt-24 pb-12">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center mb-6">
@@ -235,64 +219,41 @@ if(!$user) {
                 </a>
             </div>
             
-            <!-- User Profile Card -->
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-6" role="alert">
+                <strong class="font-bold">Demo Mode:</strong>
+                <span class="block sm:inline"> Showing pseudo data for presentation purposes.</span>
+            </div>
+
+            <!-- User Info -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
-                <div class="flex flex-col md:flex-row">
-                    <div class="md:w-1/3 mb-6 md:mb-0">
-                        <div class="flex flex-col items-center">
-                            <div class="w-32 h-32 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                                <i class="fas fa-user text-blue-500 text-5xl"></i>
-                            </div>
-                            <h2 class="text-xl font-semibold text-gray-800"><?php echo htmlspecialchars($user["first_name"] . " " . $user["last_name"]); ?></h2>
-                            <p class="text-gray-600 mb-2"><?php echo htmlspecialchars($user["email"]); ?></p>
-                            <div class="mt-2">
-                                <?php if($user["is_admin"] == 1): ?>
-                                    <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm font-medium">Admin</span>
-                                <?php else: ?>
-                                    <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">User</span>
-                                <?php endif; ?>
-                            </div>
+                <div class="flex flex-col md:flex-row items-start md:items-center">
+                    <div class="h-20 w-20 rounded-full bg-blue-500 flex items-center justify-center text-white text-3xl font-semibold mr-6 mb-4 md:mb-0">
+                        <?php echo substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1); ?>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800"><?php echo $user['first_name'] . ' ' . $user['last_name']; ?></h2>
+                        <p class="text-gray-600 mb-1"><?php echo $user['email']; ?></p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-xs font-medium">
+                                <?php echo ucfirst($user['location']); ?>
+                            </span>
+                            <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium">
+                                <?php echo ucfirst($user['user_type']); ?>
+                            </span>
+                            <?php if($user['is_admin']): ?>
+                                <span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium">
+                                    Admin
+                                </span>
+                            <?php endif; ?>
                         </div>
                     </div>
-                    <div class="md:w-2/3 md:pl-8 border-t md:border-t-0 md:border-l border-gray-200 pt-6 md:pt-0 md:pl-8">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4">User Information</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                                <p class="text-gray-500 text-sm">User ID</p>
-                                <p class="font-medium"><?php echo htmlspecialchars($user["id"]); ?></p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500 text-sm">Location</p>
-                                <p class="font-medium"><?php echo ucfirst(htmlspecialchars($user["location"])); ?></p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500 text-sm">User Type</p>
-                                <p class="font-medium"><?php echo ucfirst(htmlspecialchars($user["user_type"])); ?></p>
-                            </div>
-                            <div>
-                                <p class="text-gray-500 text-sm">Joined Date</p>
-                                <p class="font-medium"><?php echo date("F d, Y", strtotime($user["created_at"])); ?></p>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-6">
-                            <h3 class="text-lg font-semibold text-gray-700 mb-4">Actions</h3>
-                            <div class="flex space-x-3">
-                                <a href="edit_user.php?id=<?php echo $user["id"]; ?>" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition">
-                                    <i class="fas fa-edit mr-1"></i> Edit User
-                                </a>
-                                <?php if($user["id"] != $_SESSION["id"]): ?>
-                                    <a href="admin.php?delete_id=<?php echo $user["id"]; ?>" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-md font-medium transition" onclick="return confirm('Are you sure you want to delete this user?');">
-                                        <i class="fas fa-trash mr-1"></i> Delete User
-                                    </a>
-                                <?php endif; ?>
-                            </div>
-                        </div>
+                    <div class="ml-auto mt-4 md:mt-0">
+                        <p class="text-sm text-gray-500">Joined: <?php echo date('M d, Y', strtotime($user['created_at'])); ?></p>
                     </div>
                 </div>
             </div>
-            
-            <!-- User Statistics -->
+
+            <!-- Usage Statistics -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <!-- Water Usage -->
                 <div class="bg-white rounded-lg shadow-md p-5">
@@ -306,27 +267,50 @@ if(!$user) {
                             foreach($water_usage as $usage) {
                                 $total_usage += $usage['usage_amount'];
                             }
-                            echo number_format($total_usage, 2) . " L";
-                        ?>
+                            echo number_format($total_usage, 1);
+                        ?> L
                     </p>
+                    <p class="text-sm text-gray-500 mt-2">Last 30 days</p>
                 </div>
                 
-                <!-- Devices Count -->
+                <!-- Active Devices -->
                 <div class="bg-white rounded-lg shadow-md p-5">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-gray-600 font-medium">Devices</h3>
+                        <h3 class="text-gray-600 font-medium">Active Devices</h3>
                         <i class="fas fa-microchip text-green-500"></i>
                     </div>
-                    <p class="text-3xl font-bold text-green-600"><?php echo count($devices); ?></p>
+                    <p class="text-3xl font-bold text-green-600">
+                        <?php 
+                            $active_devices = 0;
+                            foreach($devices as $device) {
+                                if($device['status'] == 'active') {
+                                    $active_devices++;
+                                }
+                            }
+                            echo $active_devices;
+                        ?>
+                    </p>
+                    <p class="text-sm text-gray-500 mt-2">Out of <?php echo count($devices); ?> total devices</p>
                 </div>
                 
-                <!-- Goals Count -->
+                <!-- Goals Progress -->
                 <div class="bg-white rounded-lg shadow-md p-5">
                     <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-gray-600 font-medium">Goals</h3>
+                        <h3 class="text-gray-600 font-medium">Goals Progress</h3>
                         <i class="fas fa-bullseye text-purple-500"></i>
                     </div>
-                    <p class="text-3xl font-bold text-purple-600"><?php echo count($goals); ?></p>
+                    <p class="text-3xl font-bold text-purple-600">
+                        <?php 
+                            $completed_goals = 0;
+                            foreach($goals as $goal) {
+                                if($goal['status'] == 'completed') {
+                                    $completed_goals++;
+                                }
+                            }
+                            echo $completed_goals . '/' . count($goals);
+                        ?>
+                    </p>
+                    <p class="text-sm text-gray-500 mt-2">Goals completed</p>
                 </div>
             </div>
             
@@ -334,30 +318,48 @@ if(!$user) {
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Water Usage History</h2>
                 
-                <?php if(count($water_usage) > 0): ?>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full bg-white">
-                            <thead>
-                                <tr class="bg-blue-100 text-blue-800">
-                                    <th class="py-3 px-4 text-left">Date</th>
-                                    <th class="py-3 px-4 text-left">Amount (L)</th>
-                                    <th class="py-3 px-4 text-left">Type</th>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-blue-100 text-blue-800">
+                                <th class="py-3 px-4 text-left">Date</th>
+                                <th class="py-3 px-4 text-left">Amount (L)</th>
+                                <th class="py-3 px-4 text-left">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach($water_usage as $usage): ?>
+                                <tr class="border-b hover:bg-blue-50">
+                                    <td class="py-3 px-4"><?php echo date("M d, Y", strtotime($usage["usage_date"])); ?></td>
+                                    <td class="py-3 px-4"><?php echo number_format($usage["usage_amount"], 1); ?></td>
+                                    <td class="py-3 px-4">
+                                        <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                            <?php 
+                                                switch($usage["usage_type"]) {
+                                                    case "bathroom":
+                                                        echo "bg-blue-100 text-blue-800";
+                                                        break;
+                                                    case "kitchen":
+                                                        echo "bg-green-100 text-green-800";
+                                                        break;
+                                                    case "garden":
+                                                        echo "bg-yellow-100 text-yellow-800";
+                                                        break;
+                                                    case "laundry":
+                                                        echo "bg-purple-100 text-purple-800";
+                                                        break;
+                                                    default:
+                                                        echo "bg-gray-100 text-gray-800";
+                                                }
+                                            ?>">
+                                            <?php echo ucfirst($usage["usage_type"]); ?>
+                                        </span>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach($water_usage as $usage): ?>
-                                    <tr class="border-b hover:bg-blue-50">
-                                        <td class="py-3 px-4"><?php echo date("M d, Y", strtotime($usage["usage_date"])); ?></td>
-                                        <td class="py-3 px-4"><?php echo number_format($usage["usage_amount"], 2); ?></td>
-                                        <td class="py-3 px-4"><?php echo ucfirst(htmlspecialchars($usage["usage_type"])); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php else: ?>
-                    <p class="text-gray-600">No water usage records found.</p>
-                <?php endif; ?>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
             </div>
             
             <!-- Devices -->
@@ -382,11 +384,24 @@ if(!$user) {
                                         <td class="py-3 px-4"><?php echo ucfirst(htmlspecialchars($device["device_type"])); ?></td>
                                         <td class="py-3 px-4"><?php echo date("M d, Y", strtotime($device["installation_date"])); ?></td>
                                         <td class="py-3 px-4">
-                                            <?php if($device["status"] == "active"): ?>
-                                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Active</span>
-                                            <?php else: ?>
-                                                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium"><?php echo ucfirst($device["status"]); ?></span>
-                                            <?php endif; ?>
+                                            <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                                <?php 
+                                                    switch($device["status"]) {
+                                                        case "active":
+                                                            echo "bg-green-100 text-green-800";
+                                                            break;
+                                                        case "inactive":
+                                                            echo "bg-red-100 text-red-800";
+                                                            break;
+                                                        case "maintenance":
+                                                            echo "bg-yellow-100 text-yellow-800";
+                                                            break;
+                                                        default:
+                                                            echo "bg-gray-100 text-gray-800";
+                                                    }
+                                                ?>">
+                                                <?php echo ucfirst($device["status"]); ?>
+                                            </span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -394,11 +409,11 @@ if(!$user) {
                         </table>
                     </div>
                 <?php else: ?>
-                    <p class="text-gray-600">No devices found.</p>
+                    <p class="text-gray-500">No devices found for this user.</p>
                 <?php endif; ?>
             </div>
             
-            <!-- Goals -->
+            <!-- Water Saving Goals -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h2 class="text-xl font-semibold text-gray-700 mb-4">Water Saving Goals</h2>
                 
@@ -409,8 +424,7 @@ if(!$user) {
                                 <tr class="bg-blue-100 text-blue-800">
                                     <th class="py-3 px-4 text-left">Goal</th>
                                     <th class="py-3 px-4 text-left">Target</th>
-                                    <th class="py-3 px-4 text-left">Start Date</th>
-                                    <th class="py-3 px-4 text-left">End Date</th>
+                                    <th class="py-3 px-4 text-left">Timeline</th>
                                     <th class="py-3 px-4 text-left">Status</th>
                                 </tr>
                             </thead>
@@ -418,17 +432,33 @@ if(!$user) {
                                 <?php foreach($goals as $goal): ?>
                                     <tr class="border-b hover:bg-blue-50">
                                         <td class="py-3 px-4"><?php echo htmlspecialchars($goal["goal_description"]); ?></td>
-                                        <td class="py-3 px-4"><?php echo number_format($goal["target_amount"], 2) . " L"; ?></td>
-                                        <td class="py-3 px-4"><?php echo date("M d, Y", strtotime($goal["start_date"])); ?></td>
-                                        <td class="py-3 px-4"><?php echo date("M d, Y", strtotime($goal["end_date"])); ?></td>
+                                        <td class="py-3 px-4"><?php echo number_format($goal["target_amount"], 1); ?> L</td>
                                         <td class="py-3 px-4">
-                                            <?php if($goal["status"] == "completed"): ?>
-                                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">Completed</span>
-                                            <?php elseif($goal["status"] == "in progress"): ?>
-                                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">In Progress</span>
-                                            <?php else: ?>
-                                                <span class="bg-gray-100 text-gray-800 px-2 py-1 rounded-full text-xs font-medium"><?php echo ucfirst($goal["status"]); ?></span>
-                                            <?php endif; ?>
+                                            <?php 
+                                                echo date("M d, Y", strtotime($goal["start_date"])); 
+                                                echo " - ";
+                                                echo date("M d, Y", strtotime($goal["end_date"]));
+                                            ?>
+                                        </td>
+                                        <td class="py-3 px-4">
+                                            <span class="px-2 py-1 rounded-full text-xs font-medium 
+                                                <?php 
+                                                    switch($goal["status"]) {
+                                                        case "completed":
+                                                            echo "bg-green-100 text-green-800";
+                                                            break;
+                                                        case "in progress":
+                                                            echo "bg-blue-100 text-blue-800";
+                                                            break;
+                                                        case "pending":
+                                                            echo "bg-yellow-100 text-yellow-800";
+                                                            break;
+                                                        default:
+                                                            echo "bg-gray-100 text-gray-800";
+                                                    }
+                                                ?>">
+                                                <?php echo ucfirst($goal["status"]); ?>
+                                            </span>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -436,7 +466,7 @@ if(!$user) {
                         </table>
                     </div>
                 <?php else: ?>
-                    <p class="text-gray-600">No goals found.</p>
+                    <p class="text-gray-500">No goals found for this user.</p>
                 <?php endif; ?>
             </div>
         </div>
@@ -461,31 +491,33 @@ if(!$user) {
                 <div>
                     <h4 class="font-medium mb-4">Resources</h4>
                     <ul class="space-y-2">
-                        <li><a href="tips.html" class="text-blue-200 hover:text-white">Water Saving Tips</a></li>
                         <li><a href="#" class="text-blue-200 hover:text-white">FAQ</a></li>
                         <li><a href="#" class="text-blue-200 hover:text-white">Support</a></li>
-                        <li><a href="#" class="text-blue-200 hover:text-white">Blog</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-medium mb-4">Connect With Us</h4>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
+                    <h4 class="font-medium mb-4">Contact</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-envelope text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">info@aquasave.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-phone text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">+1 (555) 123-4567</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <div class="border-t border-blue-700 mt-8 pt-6 text-center">
-                <p class="text-blue-200">&copy; 2023 AquaSave. All rights reserved.</p>
+            <div class="border-t border-blue-700 mt-8 pt-6 text-center text-blue-300">
+                <p>&copy; 2025 AquaSave. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // Toggle mobile menu
-        document.getElementById('menu-toggle').addEventListener('click', function() {
+        // Mobile menu toggle
+        document.getElementById('menu-toggle')?.addEventListener('click', function() {
             document.getElementById('mobile-menu').classList.toggle('hidden');
         });
     </script>

@@ -14,61 +14,83 @@ if(!isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== 1){
     exit;
 }
 
-// Include config file
-require_once "config.php";
-// Include database connection check utility
-require_once "db_connection_check.php";
-
 // Process user deletion
 if(isset($_GET["delete_id"]) && !empty($_GET["delete_id"])){
     $delete_id = $_GET["delete_id"];
     
     // Prevent admin from deleting themselves
     if($delete_id != $_SESSION["id"]){
-        // Try database deletion if connected
-        if($is_db_connected) {
-            $sql = "DELETE FROM users WHERE id = ? AND is_admin = 0";
-            
-            if($stmt = mysqli_prepare($conn, $sql)){
-                mysqli_stmt_bind_param($stmt, "i", $delete_id);
-                
-                if(mysqli_stmt_execute($stmt)){
-                    header("location: admin.php?success=User deleted successfully");
-                } else{
-                    header("location: admin.php?error=Something went wrong. Please try again later.");
-                }
-                
-                mysqli_stmt_close($stmt);
-            }
-        } else {
-            // Just redirect with success message for demo purposes
-            header("location: admin.php?success=User deleted successfully (Demo Mode)");
-        }
+        // Just redirect with success message for demo purposes
+        header("location: admin.php?success=User deleted successfully (Demo Mode)");
     } else {
         header("location: admin.php?error=You cannot delete your own account.");
     }
     exit;
 }
 
-// Initialize users array with pseudo data
-$users = [];
-
-// Try to fetch real users if database is connected
-if($is_db_connected) {
-    // Fetch all users
-    $sql = "SELECT id, first_name, last_name, email, location, user_type, is_admin, created_at FROM users ORDER BY created_at DESC";
-    $result = mysqli_query($conn, $sql);
-    
-    if($result) {
-        $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
-    }
-}
-
-// If no users from database or connection failed, use pseudo data
-if(empty($users)) {
-    // Get pseudo users from the utility function
-    $users = array_values(get_pseudo_users());
-}
+// Create pseudo data for demonstration
+$users = [
+    [
+        'id' => 1,
+        'first_name' => 'Admin',
+        'last_name' => 'User',
+        'email' => 'admin@aquasave.com',
+        'location' => 'urban',
+        'user_type' => 'admin',
+        'is_admin' => 1,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-30 days'))
+    ],
+    [
+        'id' => 2,
+        'first_name' => 'John',
+        'last_name' => 'Doe',
+        'email' => 'john@example.com',
+        'location' => 'suburban',
+        'user_type' => 'residential',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-25 days'))
+    ],
+    [
+        'id' => 3,
+        'first_name' => 'Jane',
+        'last_name' => 'Smith',
+        'email' => 'jane@example.com',
+        'location' => 'urban',
+        'user_type' => 'commercial',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-20 days'))
+    ],
+    [
+        'id' => 4,
+        'first_name' => 'Robert',
+        'last_name' => 'Johnson',
+        'email' => 'robert@example.com',
+        'location' => 'rural',
+        'user_type' => 'residential',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-15 days'))
+    ],
+    [
+        'id' => 5,
+        'first_name' => 'Emily',
+        'last_name' => 'Williams',
+        'email' => 'emily@example.com',
+        'location' => 'suburban',
+        'user_type' => 'residential',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-10 days'))
+    ],
+    [
+        'id' => 6,
+        'first_name' => 'Michael',
+        'last_name' => 'Brown',
+        'email' => 'michael@example.com',
+        'location' => 'urban',
+        'user_type' => 'industrial',
+        'is_admin' => 0,
+        'created_at' => date('Y-m-d H:i:s', strtotime('-5 days'))
+    ]
+];
 
 // Get statistics for dashboard
 $total_users = count($users);
@@ -95,15 +117,6 @@ foreach($users as $user) {
                 break;
         }
     }
-}
-
-// Add notification for demo mode
-$demo_notification = "";
-if(!$is_db_connected) {
-    $demo_notification = '<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-6" role="alert">
-                            <strong class="font-bold">Demo Mode:</strong>
-                            <span class="block sm:inline"> Database connection is unavailable. Showing pseudo data for presentation purposes.</span>
-                          </div>';
 }
 ?>
 
@@ -197,12 +210,12 @@ if(!$is_db_connected) {
                 </a>
             </div>
             
-            <?php 
-            // Display demo mode notification if needed
-            if(!empty($demo_notification)){
-                echo $demo_notification;
-            }
+            <div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-6" role="alert">
+                <strong class="font-bold">Demo Mode:</strong>
+                <span class="block sm:inline"> Showing pseudo data for presentation purposes.</span>
+            </div>
             
+            <?php 
             // Display success or error messages
             if(isset($_GET["success"])){
                 echo '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
@@ -344,7 +357,6 @@ if(!$is_db_connected) {
                 <div>
                     <h4 class="font-medium mb-4">Resources</h4>
                     <ul class="space-y-2">
-                        <li><a href="tips.html" class="text-blue-200 hover:text-white">Water Saving Tips</a></li>
                         <li><a href="#" class="text-blue-200 hover:text-white">FAQ</a></li>
                         <li><a href="#" class="text-blue-200 hover:text-white">Support</a></li>
                     </ul>

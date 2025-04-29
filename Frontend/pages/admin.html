@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - AquaSave</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #EBF5FF;
+        }
+        .dashboard-card {
+            transition: all 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .water-progress {
+            height: 8px;
+            background-color: #E5E7EB;
+            border-radius: 4px;
+            margin-top: 8px;
+        }
+        .water-progress-bar {
+            height: 8px;
+            background-color: #3B82F6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-blue-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md fixed w-full z-10">
+        <div class="container mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center">
+                    <a href="../index.html" class="flex items-center">
+                        <i class="fas fa-water text-blue-500 text-3xl mr-2"></i>
+                        <span class="text-blue-800 font-bold text-xl">AquaSave</span>
+                    </a>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="../index.html" class="text-blue-800 hover:text-blue-600 font-medium">Home</a>
+                    <a href="dashboard.html" class="text-blue-800 hover:text-blue-600 font-medium">Dashboard</a>
+                    <a href="admin.html" class="text-blue-800 hover:text-blue-600 font-medium border-b-2 border-blue-500">Admin</a>
+                </div>
+                <div class="flex items-center">
+                    <div class="hidden md:block">
+                        <div class="relative group">
+                            <div class="flex items-center cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1495774539583-885e02cca8c2" alt="Profile" class="h-8 w-8 rounded-full object-cover">
+                                <span class="ml-2 text-gray-700 font-medium">Admin User</span>
+                                <i class="fas fa-chevron-down text-xs ml-1 text-gray-500"></i>
+                            </div>
+                            <div class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-10 hidden group-hover:block">
+                                <a href="profile.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">
+                                    <i class="fas fa-user mr-2 text-blue-500"></i> Profile
+                                </a>
+                                <a href="settings.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">
+                                    <i class="fas fa-cog mr-2 text-blue-500"></i> Settings
+                                </a>
+                                <hr class="my-1">
+                                <a href="login.html" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50">
+                                    <i class="fas fa-sign-out-alt mr-2 text-blue-500"></i> Logout
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="md:hidden">
+                        <button id="menu-toggle" class="text-blue-800 focus:outline-none">
+                            <i class="fas fa-bars text-2xl"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <a href="../index.html" class="block py-2 text-blue-800 hover:text-blue-600 font-medium">Home</a>
+                <a href="dashboard.html" class="block py-2 text-blue-800 hover:text-blue-600 font-medium">Dashboard</a>
+                <a href="admin.html" class="block py-2 text-blue-800 hover:text-blue-600 font-medium border-l-4 border-blue-500 pl-2">Admin</a>
+                <div class="mt-4 flex items-center">
+                    <img src="https://images.unsplash.com/photo-1495774539583-885e02cca8c2" alt="Profile" class="h-8 w-8 rounded-full object-cover">
+                    <span class="ml-2 text-gray-700 font-medium">Admin User</span>
+                </div>
+                <div class="mt-4 space-y-2">
+                    <a href="profile.html" class="block py-2 text-blue-800 hover:text-blue-600 font-medium">
+                        <i class="fas fa-user mr-2"></i> Profile
+                    </a>
+                    <a href="settings.html" class="block py-2 text-blue-800 hover:text-blue-600 font-medium">
+                        <i class="fas fa-cog mr-2"></i> Settings
+                    </a>
+                    <a href="login.html" class="block py-2 text-blue-800 hover:text-blue-600 font-medium">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Dashboard Section -->
+    <section class="pt-24 pb-12">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
+                <h1 class="text-2xl md:text-3xl font-bold text-blue-800">Admin Dashboard</h1>
+                <div class="flex space-x-2">
+                    <a href="add_user.html" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md font-medium transition">
+                        <i class="fas fa-user-plus mr-1"></i> Add User
+                    </a>
+                    <a href="dashboard.html" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md font-medium transition">
+                        <i class="fas fa-tachometer-alt mr-1"></i> User Dashboard
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Stats Overview -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <!-- Total Users -->
+                <div class="bg-white rounded-lg shadow-md p-5 dashboard-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 font-medium">Total Users</h3>
+                        <i class="fas fa-users text-blue-500"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-blue-800 mb-1" id="total-users">6</p>
+                    <div class="flex items-center text-sm">
+                        <span class="text-green-500 flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>12%
+                        </span>
+                        <span class="text-gray-500 ml-2">from last month</span>
+                    </div>
+                </div>
+                
+                <!-- Residential Users -->
+                <div class="bg-white rounded-lg shadow-md p-5 dashboard-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 font-medium">Residential Users</h3>
+                        <i class="fas fa-home text-green-500"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-green-600 mb-1" id="residential-users">3</p>
+                    <div class="flex items-center text-sm">
+                        <span class="text-green-500 flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>8%
+                        </span>
+                        <span class="text-gray-500 ml-2">from last month</span>
+                    </div>
+                </div>
+                
+                <!-- Commercial Users -->
+                <div class="bg-white rounded-lg shadow-md p-5 dashboard-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 font-medium">Commercial Users</h3>
+                        <i class="fas fa-building text-blue-500"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-blue-800 mb-1" id="commercial-users">1</p>
+                    <div class="flex items-center text-sm">
+                        <span class="text-red-500 flex items-center">
+                            <i class="fas fa-arrow-down mr-1"></i>5%
+                        </span>
+                        <span class="text-gray-500 ml-2">from last month</span>
+                    </div>
+                </div>
+                
+                <!-- Industrial Users -->
+                <div class="bg-white rounded-lg shadow-md p-5 dashboard-card">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 font-medium">Industrial Users</h3>
+                        <i class="fas fa-industry text-purple-500"></i>
+                    </div>
+                    <p class="text-3xl font-bold text-purple-600 mb-1" id="industrial-users">1</p>
+                    <div class="flex items-center text-sm">
+                        <span class="text-green-500 flex items-center">
+                            <i class="fas fa-arrow-up mr-1"></i>100%
+                        </span>
+                        <span class="text-gray-500 ml-2">from last month</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- User Management Section -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-2 md:mb-0">User Management</h2>
+                    <div class="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
+                        <div class="relative">
+                            <input type="text" id="user-search" placeholder="Search users..." 
+                                class="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </div>
+                        </div>
+                        <select id="user-type-filter" class="px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All User Types</option>
+                            <option value="residential">Residential</option>
+                            <option value="commercial">Commercial</option>
+                            <option value="industrial">Industrial</option>
+                            <option value="admin">Admin</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr>
+                                <th class="py-3 px-4 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                <th class="py-3 px-4 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                                <th class="py-3 px-4 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                                <th class="py-3 px-4 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User Type</th>
+                                <th class="py-3 px-4 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+                                <th class="py-3 px-4 bg-blue-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200" id="users-table-body">
+                            <!-- Users will be displayed here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Water Usage Analytics Section -->
+    <section class="pb-12">
+        <div class="container mx-auto px-4">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Water Usage Analytics</h2>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Water Usage by User Type -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Usage by User Type</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <canvas id="userTypeChart" height="300"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- Monthly Water Usage Trend -->
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-700 mb-2">Monthly Usage Trend</h3>
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <canvas id="monthlyUsageChart" height="300"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-blue-800 text-white py-8">
+        <div class="container mx-auto px-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-xl font-semibold mb-4">AquaSave</h3>
+                    <p class="text-blue-100">Helping you conserve water and save money through smart water management.</p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Quick Links</h3>
+                    <ul class="space-y-2">
+                        <li><a href="../index.html" class="text-blue-100 hover:text-white">Home</a></li>
+                        <li><a href="dashboard.html" class="text-blue-100 hover:text-white">Dashboard</a></li>
+                        <li><a href="admin.html" class="text-blue-100 hover:text-white">Admin</a></li>
+                        <li><a href="tips.html" class="text-blue-100 hover:text-white">Water Tips</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Resources</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-blue-100 hover:text-white">Help Center</a></li>
+                        <li><a href="#" class="text-blue-100 hover:text-white">Contact Support</a></li>
+                        <li><a href="#" class="text-blue-100 hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="text-blue-100 hover:text-white">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Connect With Us</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-blue-100 hover:text-white text-xl"><i class="fab fa-facebook"></i></a>
+                        <a href="#" class="text-blue-100 hover:text-white text-xl"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-blue-100 hover:text-white text-xl"><i class="fab fa-instagram"></i></a>
+                        <a href="#" class="text-blue-100 hover:text-white text-xl"><i class="fab fa-linkedin"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-blue-700 mt-8 pt-6 text-center text-blue-100">
+                <p>&copy; 2025 AquaSave. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Toggle mobile menu
+        document.getElementById('menu-toggle').addEventListener('click', function() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+
+        // Database connection and data fetching
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch users from database
+            fetchUsers();
+            
+            // Fetch statistics
+            fetchStatistics();
+            
+            // Fetch water usage data for charts
+            fetchWaterUsageData();
+            
+            // Setup search and filter functionality
+            setupSearchAndFilter();
+        });
+
+        // Function to fetch users from database
+        function fetchUsers() {
+            fetch('get_users.php')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update the users table with the fetched data
+                    updateUsersTable(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching users:', error);
+                    // If fetch fails, use pseudo data
+                    usePseudoUserData();
+                });
+        }
+
+        // Function to fetch statistics from database
+        function fetchStatistics() {
+            fetch('get_statistics.php')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Update the statistics cards with the fetched data
+                    updateStatistics(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching statistics:', error);
+                    // If fetch fails, use pseudo statistics data
+                    usePseudoStatisticsData();
+                });
+        }
+
+        // Function to update users table with data from database
+        function updateUsersTable(users) {
+            const tableBody = document.getElementById('users-table-body');
+            tableBody.innerHTML = ''; // Clear existing rows
+            
+            if (users.length === 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.innerHTML = `
+                    <td colspan="6" class="py-4 px-4 text-center text-gray-500">
+                        No users found matching your criteria
+                    </td>
+                `;
+                tableBody.appendChild(emptyRow);
+                return;
+            }
+            
+            users.forEach(user => {
+                const row = createUserRow(user);
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Function to update statistics with data from database
+        function updateStatistics(stats) {
+            document.getElementById('total-users').textContent = stats.total_users;
+            document.getElementById('residential-users').textContent = stats.residential_users;
+            document.getElementById('commercial-users').textContent = stats.commercial_users;
+            document.getElementById('industrial-users').textContent = stats.industrial_users;
+        }
+
+        // Function to create a table row for a user
+        function createUserRow(user) {
+            const row = document.createElement('tr');
+            
+            // Determine the background color based on user type
+            let bgColor = 'bg-green-500'; // Default for residential
+            if (user.user_type === 'commercial') bgColor = 'bg-blue-500';
+            if (user.user_type === 'industrial') bgColor = 'bg-purple-500';
+            if (user.is_admin === 1) bgColor = 'bg-red-500';
+            
+            // Determine the badge color based on user type
+            let badgeClass = 'bg-green-100 text-green-800'; // Default for residential
+            if (user.user_type === 'commercial') badgeClass = 'bg-blue-100 text-blue-800';
+            if (user.user_type === 'industrial') badgeClass = 'bg-purple-100 text-purple-800';
+            if (user.is_admin === 1) badgeClass = 'bg-red-100 text-red-800';
+            
+            // Format the date
+            const createdDate = new Date(user.created_at);
+            const now = new Date();
+            const diffTime = Math.abs(now - createdDate);
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            const dateString = diffDays + ' days ago';
+            
+            row.innerHTML = `
+                <td class="py-3 px-4">
+                    <div class="flex items-center">
+                        <div class="h-8 w-8 rounded-full ${bgColor} flex items-center justify-center text-white font-bold">${user.first_name.charAt(0)}</div>
+                        <div class="ml-4">
+                            <div class="text-sm font-medium text-gray-900">${user.first_name} ${user.last_name}</div>
+                            <div class="text-xs text-gray-500">${user.is_admin === 1 ? 'admin' : 'user'}</div>
+                        </div>
+                    </div>
+                </td>
+                <td class="py-3 px-4 text-sm text-gray-500">${user.email}</td>
+                <td class="py-3 px-4 text-sm text-gray-500">${user.location}</td>
+                <td class="py-3 px-4">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${badgeClass}">${user.user_type}</span>
+                </td>
+                <td class="py-3 px-4 text-sm text-gray-500">${dateString}</td>
+                <td class="py-3 px-4 text-sm font-medium">
+                    <a href="view_user.html?id=${user.id}" class="text-blue-600 hover:text-blue-900 mr-3">View</a>
+                    ${user.is_admin === 1 ? 
+                        '<a href="#" class="text-gray-400 cursor-not-allowed">Delete</a>' : 
+                        `<a href="#" onclick="deleteUser(${user.id})" class="text-red-600 hover:text-red-900">Delete</a>`}
+                </td>
+            `;
+            
+            return row;
+        }
+
+        // Function to use pseudo data when database connection fails
+        function usePseudoUserData() {
+            const pseudoUsers = [
+                {
+                    id: 1,
+                    first_name: 'Admin',
+                    last_name: 'User',
+                    email: 'admin@aquasave.com',
+                    location: 'urban',
+                    user_type: 'admin',
+                    is_admin: 1,
+                    created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+                },
+                {
+                    id: 2,
+                    first_name: 'John',
+                    last_name: 'Doe',
+                    email: 'john@example.com',
+                    location: 'suburban',
+                    user_type: 'residential',
+                    is_admin: 0,
+                    created_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000)
+                },
+                {
+                    id: 3,
+                    first_name: 'Jane',
+                    last_name: 'Smith',
+                    email: 'jane@example.com',
+                    location: 'urban',
+                    user_type: 'commercial',
+                    is_admin: 0,
+                    created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+                },
+                {
+                    id: 4,
+                    first_name: 'Robert',
+                    last_name: 'Johnson',
+                    email: 'robert@example.com',
+                    location: 'rural',
+                    user_type: 'residential',
+                    is_admin: 0,
+                    created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+                },
+                {
+                    id: 5,
+                    first_name: 'Emily',
+                    last_name: 'Williams',
+                    email: 'emily@example.com',
+                    location: 'suburban',
+                    user_type: 'residential',
+                    is_admin: 0,
+                    created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+                },
+                {
+                    id: 6,
+                    first_name: 'Michael',
+                    last_name: 'Brown',
+                    email: 'michael@example.com',
+                    location: 'urban',
+                    user_type: 'industrial',
+                    is_admin: 0,
+                    created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
+                }
+            ];
+            
+            // Store the users data globally for search and filtering
+            window.allUsers = pseudoUsers;
+            
+            // Show notification that we're using pseudo data
+            showNotification('Database connection failed. Showing demo data.', 'warning');
+            
+            // Update the users table with pseudo data
+            updateUsersTable(pseudoUsers);
+        }
+
+        // Function to use pseudo statistics data when database connection fails
+        function usePseudoStatisticsData() {
+            const pseudoStats = {
+                total_users: 6,
+                residential_users: 3,
+                commercial_users: 1,
+                industrial_users: 1
+            };
+            
+            // Update the statistics with pseudo data
+            updateStatistics(pseudoStats);
+        }
+
+        // Function to delete a user
+        function deleteUser(userId) {
+            if (confirm('Are you sure you want to delete this user?')) {
+                fetch('delete_user.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ id: userId }),
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        showNotification('User deleted successfully!', 'success');
+                        // Refresh the users list
+                        fetchUsers();
+                        // Refresh the statistics
+                        fetchStatistics();
+                    } else {
+                        showNotification('Failed to delete user: ' + data.message, 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting user:', error);
+                    showNotification('Failed to delete user. Using demo mode.', 'warning');
+                    // In demo mode, just remove the row from the table
+                    const tableBody = document.getElementById('users-table-body');
+                    const rows = tableBody.querySelectorAll('tr');
+                    rows.forEach(row => {
+                        const deleteLink = row.querySelector(`a[onclick="deleteUser(${userId})"]`);
+                        if (deleteLink) {
+                            row.remove();
+                        }
+                    });
+                });
+            }
+        }
+
+        // Function to show notification
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 px-4 py-2 rounded-md shadow-md z-50 ';
+            
+            // Set color based on notification type
+            if (type === 'success') {
+                notification.className += 'bg-green-100 text-green-800 border border-green-400';
+            } else if (type === 'error') {
+                notification.className += 'bg-red-100 text-red-800 border border-red-400';
+            } else if (type === 'warning') {
+                notification.className += 'bg-yellow-100 text-yellow-800 border border-yellow-400';
+            }
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <span class="mr-2">
+                        ${type === 'success' ? '<i class="fas fa-check-circle"></i>' : ''}
+                        ${type === 'error' ? '<i class="fas fa-exclamation-circle"></i>' : ''}
+                        ${type === 'warning' ? '<i class="fas fa-exclamation-triangle"></i>' : ''}
+                    </span>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove notification after 5 seconds
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+        
+        // Function to setup search and filter functionality
+        function setupSearchAndFilter() {
+            const searchInput = document.getElementById('user-search');
+            const typeFilter = document.getElementById('user-type-filter');
+            
+            // Search functionality
+            searchInput.addEventListener('input', function() {
+                filterUsers();
+            });
+            
+            // Filter by user type
+            typeFilter.addEventListener('change', function() {
+                filterUsers();
+            });
+        }
+        
+        // Function to filter users based on search and filter criteria
+        function filterUsers() {
+            const searchInput = document.getElementById('user-search');
+            const typeFilter = document.getElementById('user-type-filter');
+            
+            const searchTerm = searchInput.value.toLowerCase();
+            const userType = typeFilter.value;
+            
+            // Get all users (either from database response or pseudo data)
+            const allUsers = window.allUsers || [];
+            
+            // Filter users based on search term and user type
+            const filteredUsers = allUsers.filter(user => {
+                // Check if user matches search term
+                const matchesSearch = searchTerm === '' || 
+                    user.first_name.toLowerCase().includes(searchTerm) || 
+                    user.last_name.toLowerCase().includes(searchTerm) || 
+                    user.email.toLowerCase().includes(searchTerm) ||
+                    user.location.toLowerCase().includes(searchTerm);
+                
+                // Check if user matches type filter
+                const matchesType = userType === '' || 
+                    (userType === 'admin' && user.is_admin === 1) || 
+                    (userType !== 'admin' && user.user_type === userType);
+                
+                return matchesSearch && matchesType;
+            });
+            
+            // Update the table with filtered users
+            updateUsersTable(filteredUsers);
+        }
+        
+        // Function to fetch water usage data for charts
+        function fetchWaterUsageData() {
+            fetch('get_water_usage.php')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    // Create charts with the fetched data
+                    createCharts(data);
+                })
+                .catch(error => {
+                    console.error('Error fetching water usage data:', error);
+                    // If fetch fails, use pseudo data
+                    usePseudoWaterUsageData();
+                });
+        }
+        
+        // Function to use pseudo water usage data when database connection fails
+        function usePseudoWaterUsageData() {
+            const pseudoData = {
+                userTypeUsage: {
+                    residential: 3500,
+                    commercial: 8200,
+                    industrial: 12500
+                },
+                monthlyUsage: {
+                    'Jan': 18000,
+                    'Feb': 19500,
+                    'Mar': 21000,
+                    'Apr': 18500,
+                    'May': 20000,
+                    'Jun': 22500
+                }
+            };
+            
+            // Create charts with pseudo data
+            createCharts(pseudoData);
+        }
+        
+        // Function to create charts
+        function createCharts(data) {
+            // Create user type usage chart
+            createUserTypeChart(data.userTypeUsage);
+            
+            // Create monthly usage chart
+            createMonthlyUsageChart(data.monthlyUsage);
+        }
+        
+        // Function to create user type usage chart
+        function createUserTypeChart(data) {
+            const ctx = document.getElementById('userTypeChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(data).map(key => key.charAt(0).toUpperCase() + key.slice(1)),
+                    datasets: [{
+                        data: Object.values(data),
+                        backgroundColor: [
+                            'rgba(72, 187, 120, 0.7)',  // green for residential
+                            'rgba(66, 153, 225, 0.7)',  // blue for commercial
+                            'rgba(159, 122, 234, 0.7)'  // purple for industrial
+                        ],
+                        borderColor: [
+                            'rgba(72, 187, 120, 1)',
+                            'rgba(66, 153, 225, 1)',
+                            'rgba(159, 122, 234, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    const label = context.label || '';
+                                    const value = context.raw || 0;
+                                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                    const percentage = Math.round((value / total) * 100);
+                                    return `${label}: ${value} liters (${percentage}%)`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Function to create monthly usage chart
+        function createMonthlyUsageChart(data) {
+            const ctx = document.getElementById('monthlyUsageChart').getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Object.keys(data),
+                    datasets: [{
+                        label: 'Water Usage (Liters)',
+                        data: Object.values(data),
+                        backgroundColor: 'rgba(66, 153, 225, 0.2)',
+                        borderColor: 'rgba(66, 153, 225, 1)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(66, 153, 225, 1)',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Liters'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Month'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+    
+    <!-- Chart.js Library -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</body>
+</html>

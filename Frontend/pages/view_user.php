@@ -2,14 +2,22 @@
 // Initialize the session
 session_start();
  
-// Check if the user is logged in and is an admin, if not then redirect to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["is_admin"] !== 1){
+// Check if the user is logged in, if not then redirect to login page
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
+    exit;
+}
+
+// Check if user is admin
+if(!isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== 1){
+    header("location: dashboard.php?error=You do not have permission to access this page");
     exit;
 }
 
 // Include config file
 require_once "config.php";
+// Include database connection check utility
+require_once "db_connection_check.php";
 
 // Check if user ID is provided
 if(!isset($_GET["id"]) || empty($_GET["id"])){
@@ -18,52 +26,122 @@ if(!isset($_GET["id"]) || empty($_GET["id"])){
 }
 
 $user_id = $_GET["id"];
+$user = null;
+$water_usage = [];
+$devices = [];
+$goals = [];
 
-// Fetch user details
-$sql = "SELECT * FROM users WHERE id = ?";
-if($stmt = mysqli_prepare($conn, $sql)){
-    mysqli_stmt_bind_param($stmt, "i", $user_id);
-    
-    if(mysqli_stmt_execute($stmt)){
-        $result = mysqli_stmt_get_result($stmt);
+// Try to fetch real data if database is connected
+if($is_db_connected) {
+    // Fetch user details
+    $sql = "SELECT * FROM users WHERE id = ?";
+    if($stmt = mysqli_prepare($conn, $sql)){
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
         
-        if(mysqli_num_rows($result) == 1){
-            $user = mysqli_fetch_assoc($result);
+        if(mysqli_stmt_execute($stmt)){
+            $result = mysqli_stmt_get_result($stmt);
+            
+            if(mysqli_num_rows($result) == 1){
+                $user = mysqli_fetch_assoc($result);
+            } else {
+                header("location: admin.php?error=User not found");
+                exit;
+            }
         } else {
-            header("location: admin.php?error=User not found");
+            header("location: admin.php?error=Something went wrong. Please try again later.");
             exit;
         }
-    } else {
-        header("location: admin.php?error=Something went wrong. Please try again later.");
-        exit;
+        
+        mysqli_stmt_close($stmt);
+    }
+
+    // Fetch user's water usage
+    $sql = "SELECT * FROM water_usage WHERE user_id = ? ORDER BY usage_date DESC";
+    if($stmt = mysqli_prepare($conn, $sql)){
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        if(mysqli_stmt_execute($stmt)){
+            $water_usage_result = mysqli_stmt_get_result($stmt);
+            $water_usage = mysqli_fetch_all($water_usage_result, MYSQLI_ASSOC);
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    // Fetch user's devices
+    $sql = "SELECT * FROM devices WHERE user_id = ?";
+    if($stmt = mysqli_prepare($conn, $sql)){
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        if(mysqli_stmt_execute($stmt)){
+            $devices_result = mysqli_stmt_get_result($stmt);
+            $devices = mysqli_fetch_all($devices_result, MYSQLI_ASSOC);
+        }
+        mysqli_stmt_close($stmt);
+    }
+
+    // Fetch user's goals
+    $sql = "SELECT * FROM goals WHERE user_id = ? ORDER BY end_date ASC";
+    if($stmt = mysqli_prepare($conn, $sql)){
+        mysqli_stmt_bind_param($stmt, "i", $user_id);
+        if(mysqli_stmt_execute($stmt)){
+            $goals_result = mysqli_stmt_get_result($stmt);
+            $goals = mysqli_fetch_all($goals_result, MYSQLI_ASSOC);
+        }
+        mysqli_stmt_close($stmt);
+    }
+}
+
+// If no data from database or connection failed, use pseudo data
+if(!$user) {
+    // Get pseudo users from the utility function
+    $pseudo_users = get_pseudo_users();
+    
+    // Get user by ID or default to first user
+    $user = isset($pseudo_users[$user_id]) ? $pseudo_users[$user_id] : $pseudo_users[1];
+    
+    // Generate sample water usage data
+    for($i = 0; $i < 5; $i++) {
+        $water_usage[] = [
+            'id' => $i + 1,
+            'user_id' => $user_id,
+            'usage_amount' => rand(50, 200) / 10,
+            'usage_date' => date('Y-m-d', strtotime("-$i days")),
+            'usage_type' => ['bathroom', 'kitchen', 'garden', 'laundry'][rand(0, 3)],
+            'created_at' => date('Y-m-d H:i:s', strtotime("-$i days"))
+        ];
     }
     
-    mysqli_stmt_close($stmt);
-} else {
-    header("location: admin.php?error=Something went wrong. Please try again later.");
-    exit;
-}
-
-// Fetch user's water usage
-$sql = "SELECT * FROM water_usage WHERE user_id = ? ORDER BY usage_date DESC";
-$water_usage_result = mysqli_query($conn, "SELECT * FROM water_usage WHERE user_id = $user_id ORDER BY usage_date DESC");
-$water_usage = [];
-if($water_usage_result){
-    $water_usage = mysqli_fetch_all($water_usage_result, MYSQLI_ASSOC);
-}
-
-// Fetch user's devices
-$devices_result = mysqli_query($conn, "SELECT * FROM devices WHERE user_id = $user_id");
-$devices = [];
-if($devices_result){
-    $devices = mysqli_fetch_all($devices_result, MYSQLI_ASSOC);
-}
-
-// Fetch user's goals
-$goals_result = mysqli_query($conn, "SELECT * FROM goals WHERE user_id = $user_id ORDER BY end_date ASC");
-$goals = [];
-if($goals_result){
-    $goals = mysqli_fetch_all($goals_result, MYSQLI_ASSOC);
+    // Generate sample devices data
+    $device_types = ['smart meter', 'water filter', 'irrigation system', 'leak detector'];
+    for($i = 0; $i < 3; $i++) {
+        $devices[] = [
+            'id' => $i + 1,
+            'user_id' => $user_id,
+            'device_name' => $device_types[$i] . ' ' . ($i + 1),
+            'device_type' => $device_types[$i],
+            'installation_date' => date('Y-m-d', strtotime("-" . (30 + $i * 10) . " days")),
+            'status' => ['active', 'inactive', 'maintenance'][rand(0, 2)],
+            'created_at' => date('Y-m-d H:i:s', strtotime("-" . (30 + $i * 10) . " days"))
+        ];
+    }
+    
+    // Generate sample goals data
+    $goal_descriptions = [
+        'Reduce daily water usage by 10%',
+        'Install water-efficient fixtures',
+        'Fix all leaks in the house'
+    ];
+    
+    for($i = 0; $i < 3; $i++) {
+        $goals[] = [
+            'id' => $i + 1,
+            'user_id' => $user_id,
+            'goal_description' => $goal_descriptions[$i],
+            'target_amount' => rand(100, 500) / 10,
+            'start_date' => date('Y-m-d', strtotime("-" . (60 + $i * 10) . " days")),
+            'end_date' => date('Y-m-d', strtotime("+" . (30 + $i * 10) . " days")),
+            'status' => ['in progress', 'completed', 'pending'][rand(0, 2)],
+            'created_at' => date('Y-m-d H:i:s', strtotime("-" . (60 + $i * 10) . " days"))
+        ];
+    }
 }
 ?>
 

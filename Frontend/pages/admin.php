@@ -2,14 +2,22 @@
 // Initialize the session
 session_start();
  
-// Check if the user is logged in and is an admin, if not then redirect to login page
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || $_SESSION["is_admin"] !== 1){
+// Check if the user is logged in, if not then redirect to login page
+if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
+    exit;
+}
+
+// Check if user is admin
+if(!isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== 1){
+    header("location: dashboard.php?error=You do not have permission to access this page");
     exit;
 }
 
 // Include config file
 require_once "config.php";
+// Include database connection check utility
+require_once "db_connection_check.php";
 
 // Process user deletion
 if(isset($_GET["delete_id"]) && !empty($_GET["delete_id"])){
@@ -17,28 +25,86 @@ if(isset($_GET["delete_id"]) && !empty($_GET["delete_id"])){
     
     // Prevent admin from deleting themselves
     if($delete_id != $_SESSION["id"]){
-        $sql = "DELETE FROM users WHERE id = ? AND is_admin = 0";
-        
-        if($stmt = mysqli_prepare($conn, $sql)){
-            mysqli_stmt_bind_param($stmt, "i", $delete_id);
+        // Try database deletion if connected
+        if($is_db_connected) {
+            $sql = "DELETE FROM users WHERE id = ? AND is_admin = 0";
             
-            if(mysqli_stmt_execute($stmt)){
-                header("location: admin.php?success=User deleted successfully");
-            } else{
-                header("location: admin.php?error=Something went wrong. Please try again later.");
+            if($stmt = mysqli_prepare($conn, $sql)){
+                mysqli_stmt_bind_param($stmt, "i", $delete_id);
+                
+                if(mysqli_stmt_execute($stmt)){
+                    header("location: admin.php?success=User deleted successfully");
+                } else{
+                    header("location: admin.php?error=Something went wrong. Please try again later.");
+                }
+                
+                mysqli_stmt_close($stmt);
             }
-            
-            mysqli_stmt_close($stmt);
+        } else {
+            // Just redirect with success message for demo purposes
+            header("location: admin.php?success=User deleted successfully (Demo Mode)");
         }
     } else {
         header("location: admin.php?error=You cannot delete your own account.");
     }
+    exit;
 }
 
-// Fetch all users
-$sql = "SELECT id, first_name, last_name, email, location, user_type, is_admin, created_at FROM users ORDER BY created_at DESC";
-$result = mysqli_query($conn, $sql);
-$users = mysqli_fetch_all($result, MYSQLI_ASSOC);
+// Initialize users array with pseudo data
+$users = [];
+
+// Try to fetch real users if database is connected
+if($is_db_connected) {
+    // Fetch all users
+    $sql = "SELECT id, first_name, last_name, email, location, user_type, is_admin, created_at FROM users ORDER BY created_at DESC";
+    $result = mysqli_query($conn, $sql);
+    
+    if($result) {
+        $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
+    }
+}
+
+// If no users from database or connection failed, use pseudo data
+if(empty($users)) {
+    // Get pseudo users from the utility function
+    $users = array_values(get_pseudo_users());
+}
+
+// Get statistics for dashboard
+$total_users = count($users);
+$total_admins = 0;
+$residential_users = 0;
+$commercial_users = 0;
+$industrial_users = 0;
+
+foreach($users as $user) {
+    if($user['is_admin'] == 1) {
+        $total_admins++;
+    }
+    
+    if(isset($user['user_type'])) {
+        switch($user['user_type']) {
+            case 'residential':
+                $residential_users++;
+                break;
+            case 'commercial':
+                $commercial_users++;
+                break;
+            case 'industrial':
+                $industrial_users++;
+                break;
+        }
+    }
+}
+
+// Add notification for demo mode
+$demo_notification = "";
+if(!$is_db_connected) {
+    $demo_notification = '<div class="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-6" role="alert">
+                            <strong class="font-bold">Demo Mode:</strong>
+                            <span class="block sm:inline"> Database connection is unavailable. Showing pseudo data for presentation purposes.</span>
+                          </div>';
+}
 ?>
 
 <!DOCTYPE html>
@@ -121,7 +187,7 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
         </div>
     </nav>
 
-    <!-- Admin Dashboard Section -->
+    <!-- Main Content -->
     <section class="pt-24 pb-12">
         <div class="container mx-auto px-4">
             <div class="flex justify-between items-center mb-6">
@@ -131,72 +197,74 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
                 </a>
             </div>
             
-            <?php if(isset($_GET["success"])): ?>
-                <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline"><?php echo htmlspecialchars($_GET["success"]); ?></span>
-                </div>
-            <?php endif; ?>
+            <?php 
+            // Display demo mode notification if needed
+            if(!empty($demo_notification)){
+                echo $demo_notification;
+            }
             
-            <?php if(isset($_GET["error"])): ?>
-                <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
-                    <span class="block sm:inline"><?php echo htmlspecialchars($_GET["error"]); ?></span>
-                </div>
-            <?php endif; ?>
+            // Display success or error messages
+            if(isset($_GET["success"])){
+                echo '<div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-6" role="alert">
+                        <span class="block sm:inline">' . htmlspecialchars($_GET["success"]) . '</span>
+                      </div>';
+            }
             
-            <!-- Admin Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <!-- Total Users -->
-                <div class="bg-white rounded-lg shadow-md p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-gray-600 font-medium">Total Users</h3>
-                        <i class="fas fa-users text-blue-500"></i>
+            if(isset($_GET["error"])){
+                echo '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6" role="alert">
+                        <span class="block sm:inline">' . htmlspecialchars($_GET["error"]) . '</span>
+                      </div>';
+            }
+            ?>
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-500 mr-4">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Total Users</p>
+                            <p class="text-2xl font-bold text-gray-700"><?php echo $total_users; ?></p>
+                        </div>
                     </div>
-                    <p class="text-3xl font-bold text-blue-800"><?php echo count($users); ?></p>
                 </div>
                 
-                <!-- New Users This Month -->
-                <div class="bg-white rounded-lg shadow-md p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-gray-600 font-medium">New Users This Month</h3>
-                        <i class="fas fa-user-plus text-green-500"></i>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-500 mr-4">
+                            <i class="fas fa-home text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Residential Users</p>
+                            <p class="text-2xl font-bold text-gray-700"><?php echo $residential_users; ?></p>
+                        </div>
                     </div>
-                    <p class="text-3xl font-bold text-green-600">
-                        <?php 
-                            $current_month = date('m');
-                            $current_year = date('Y');
-                            $new_users = 0;
-                            
-                            foreach($users as $user) {
-                                $user_month = date('m', strtotime($user['created_at']));
-                                $user_year = date('Y', strtotime($user['created_at']));
-                                
-                                if($user_month == $current_month && $user_year == $current_year) {
-                                    $new_users++;
-                                }
-                            }
-                            
-                            echo $new_users;
-                        ?>
-                    </p>
                 </div>
                 
-                <!-- Admin Users -->
-                <div class="bg-white rounded-lg shadow-md p-5">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-gray-600 font-medium">Admin Users</h3>
-                        <i class="fas fa-user-shield text-purple-500"></i>
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-500 mr-4">
+                            <i class="fas fa-building text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Commercial Users</p>
+                            <p class="text-2xl font-bold text-gray-700"><?php echo $commercial_users; ?></p>
+                        </div>
                     </div>
-                    <p class="text-3xl font-bold text-purple-600">
-                        <?php 
-                            $admin_count = 0;
-                            foreach($users as $user) {
-                                if($user['is_admin'] == 1) {
-                                    $admin_count++;
-                                }
-                            }
-                            echo $admin_count;
-                        ?>
-                    </p>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100 text-purple-500 mr-4">
+                            <i class="fas fa-industry text-2xl"></i>
+                        </div>
+                        <div>
+                            <p class="text-gray-500 text-sm">Industrial Users</p>
+                            <p class="text-2xl font-bold text-gray-700"><?php echo $industrial_users; ?></p>
+                        </div>
+                    </div>
                 </div>
             </div>
             
@@ -207,46 +275,48 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
                 <div class="overflow-x-auto">
                     <table class="min-w-full bg-white">
                         <thead>
-                            <tr class="bg-blue-100 text-blue-800">
-                                <th class="py-3 px-4 text-left">ID</th>
-                                <th class="py-3 px-4 text-left">Name</th>
-                                <th class="py-3 px-4 text-left">Email</th>
-                                <th class="py-3 px-4 text-left">Location</th>
-                                <th class="py-3 px-4 text-left">User Type</th>
-                                <th class="py-3 px-4 text-left">Role</th>
-                                <th class="py-3 px-4 text-left">Joined</th>
-                                <th class="py-3 px-4 text-left">Actions</th>
+                            <tr>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">ID</th>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Name</th>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Email</th>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Location</th>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">User Type</th>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Joined</th>
+                                <th class="py-3 px-4 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="divide-y divide-gray-200">
                             <?php foreach($users as $user): ?>
-                                <tr class="border-b hover:bg-blue-50">
-                                    <td class="py-3 px-4"><?php echo htmlspecialchars($user["id"]); ?></td>
-                                    <td class="py-3 px-4"><?php echo htmlspecialchars($user["first_name"] . " " . $user["last_name"]); ?></td>
-                                    <td class="py-3 px-4"><?php echo htmlspecialchars($user["email"]); ?></td>
-                                    <td class="py-3 px-4"><?php echo ucfirst(htmlspecialchars($user["location"])); ?></td>
-                                    <td class="py-3 px-4"><?php echo ucfirst(htmlspecialchars($user["user_type"])); ?></td>
-                                    <td class="py-3 px-4">
-                                        <?php if($user["is_admin"] == 1): ?>
-                                            <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full text-xs font-medium">Admin</span>
-                                        <?php else: ?>
-                                            <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium">User</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="py-3 px-4"><?php echo date("M d, Y", strtotime($user["created_at"])); ?></td>
-                                    <td class="py-3 px-4">
-                                        <div class="flex space-x-2">
-                                            <a href="view_user.php?id=<?php echo $user["id"]; ?>" class="text-blue-500 hover:text-blue-700">
-                                                <i class="fas fa-eye"></i>
-                                            </a>
-                                            <?php if($user["id"] != $_SESSION["id"]): ?>
-                                                <a href="admin.php?delete_id=<?php echo $user["id"]; ?>" class="text-red-500 hover:text-red-700" onclick="return confirm('Are you sure you want to delete this user?');">
-                                                    <i class="fas fa-trash"></i>
-                                                </a>
-                                            <?php endif; ?>
+                            <tr>
+                                <td class="py-3 px-4 text-sm text-gray-500"><?php echo $user['id']; ?></td>
+                                <td class="py-3 px-4">
+                                    <div class="flex items-center">
+                                        <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white font-semibold mr-3">
+                                            <?php echo substr($user['first_name'], 0, 1) . substr($user['last_name'], 0, 1); ?>
                                         </div>
-                                    </td>
-                                </tr>
+                                        <div>
+                                            <p class="text-sm font-medium text-gray-900"><?php echo $user['first_name'] . ' ' . $user['last_name']; ?></p>
+                                            <p class="text-xs text-gray-500"><?php echo $user['is_admin'] ? 'Admin' : 'User'; ?></p>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3 px-4 text-sm text-gray-500"><?php echo $user['email']; ?></td>
+                                <td class="py-3 px-4 text-sm text-gray-500"><?php echo ucfirst($user['location']); ?></td>
+                                <td class="py-3 px-4 text-sm text-gray-500"><?php echo ucfirst($user['user_type']); ?></td>
+                                <td class="py-3 px-4 text-sm text-gray-500"><?php echo date('M d, Y', strtotime($user['created_at'])); ?></td>
+                                <td class="py-3 px-4 text-sm">
+                                    <div class="flex space-x-2">
+                                        <a href="view_user.php?id=<?php echo $user['id']; ?>" class="text-blue-600 hover:text-blue-900" title="View User">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <?php if(!$user['is_admin']): ?>
+                                        <a href="admin.php?delete_id=<?php echo $user['id']; ?>" class="text-red-600 hover:text-red-900" title="Delete User" onclick="return confirm('Are you sure you want to delete this user?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
@@ -277,28 +347,31 @@ $users = mysqli_fetch_all($result, MYSQLI_ASSOC);
                         <li><a href="tips.html" class="text-blue-200 hover:text-white">Water Saving Tips</a></li>
                         <li><a href="#" class="text-blue-200 hover:text-white">FAQ</a></li>
                         <li><a href="#" class="text-blue-200 hover:text-white">Support</a></li>
-                        <li><a href="#" class="text-blue-200 hover:text-white">Blog</a></li>
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-medium mb-4">Connect With Us</h4>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
+                    <h4 class="font-medium mb-4">Contact</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-envelope text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">info@aquasave.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-phone text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">+1 (555) 123-4567</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <div class="border-t border-blue-700 mt-8 pt-6 text-center">
-                <p class="text-blue-200">&copy; 2023 AquaSave. All rights reserved.</p>
+            <div class="border-t border-blue-700 mt-8 pt-6 text-center text-blue-300">
+                <p>&copy; 2025 AquaSave. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
     <script>
-        // Toggle mobile menu
-        document.getElementById('menu-toggle').addEventListener('click', function() {
+        // Mobile menu toggle
+        document.getElementById('menu-toggle')?.addEventListener('click', function() {
             document.getElementById('mobile-menu').classList.toggle('hidden');
         });
     </script>

@@ -4,16 +4,30 @@ session_start();
  
 // Check if the user is already logged in, if yes then redirect to dashboard
 if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
-    header("location: dashboard.php");
+    if(isset($_SESSION["is_admin"]) && $_SESSION["is_admin"] === 1) {
+        header("location: admin.php");
+    } else {
+        header("location: dashboard.php");
+    }
     exit;
 }
  
 // Include config file
 require_once "config.php";
+// Include database connection check utility
+require_once "db_connection_check.php";
  
 // Define variables and initialize with empty values
 $email = $password = "";
 $email_err = $password_err = $login_err = "";
+
+// Add a notification if database is not connected
+$db_notification = "";
+if (!$is_db_connected) {
+    $db_notification = "<div class='bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded relative mb-4' role='alert'>
+                          <span class='block sm:inline'>Database connection is currently unavailable. You can still log in with admin credentials (admin@aquasave.com / admin123) for demonstration purposes.</span>
+                        </div>";
+}
  
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -34,64 +48,81 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
     
     // Validate credentials
     if(empty($email_err) && empty($password_err)){
-        // Prepare a select statement
-        $sql = "SELECT id, first_name, last_name, email, password, is_admin FROM users WHERE email = ?";
-        
-        if($stmt = mysqli_prepare($conn, $sql)){
-            // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "s", $param_email);
+        // Check if database is connected
+        if (!$is_db_connected) {
+            // Database is not connected, check if admin credentials
+            if (handle_admin_login_without_db($email, $password)) {
+                // Admin login handled, redirect already done in the function
+                exit;
+            } else {
+                // Not admin credentials or invalid
+                $login_err = "Invalid email or password. Note: When database is unavailable, only admin login is supported.";
+            }
+        } else {
+            // Database is connected, proceed with normal login
+            // Prepare a select statement
+            $sql = "SELECT id, first_name, last_name, email, password, is_admin FROM users WHERE email = ?";
             
-            // Set parameters
-            $param_email = $email;
-            
-            // Attempt to execute the prepared statement
-            if(mysqli_stmt_execute($stmt)){
-                // Store result
-                mysqli_stmt_store_result($stmt);
+            if($stmt = mysqli_prepare($conn, $sql)){
+                // Bind variables to the prepared statement as parameters
+                mysqli_stmt_bind_param($stmt, "s", $param_email);
                 
-                // Check if email exists, if yes then verify password
-                if(mysqli_stmt_num_rows($stmt) == 1){                    
-                    // Bind result variables
-                    mysqli_stmt_bind_result($stmt, $id, $first_name, $last_name, $email, $hashed_password, $is_admin);
-                    if(mysqli_stmt_fetch($stmt)){
-                        if(password_verify($password, $hashed_password)){
-                            // Password is correct, so start a new session
-                            session_start();
-                            
-                            // Store data in session variables
-                            $_SESSION["loggedin"] = true;
-                            $_SESSION["id"] = $id;
-                            $_SESSION["email"] = $email;
-                            $_SESSION["first_name"] = $first_name;
-                            $_SESSION["last_name"] = $last_name;
-                            $_SESSION["is_admin"] = $is_admin;
-                            
-                            // Redirect user to dashboard page
-                            if($is_admin){
-                                header("location: admin.php");
-                            } else {
-                                header("location: dashboard.php");
+                // Set parameters
+                $param_email = $email;
+                
+                // Attempt to execute the prepared statement
+                if(mysqli_stmt_execute($stmt)){
+                    // Store result
+                    mysqli_stmt_store_result($stmt);
+                    
+                    // Check if email exists, if yes then verify password
+                    if(mysqli_stmt_num_rows($stmt) == 1){                    
+                        // Bind result variables
+                        mysqli_stmt_bind_result($stmt, $id, $first_name, $last_name, $email, $hashed_password, $is_admin);
+                        if(mysqli_stmt_fetch($stmt)){
+                            if(password_verify($password, $hashed_password)){
+                                // Password is correct, so start a new session
+                                session_start();
+                                
+                                // Store data in session variables
+                                $_SESSION["loggedin"] = true;
+                                $_SESSION["id"] = $id;
+                                $_SESSION["email"] = $email;
+                                $_SESSION["first_name"] = $first_name;
+                                $_SESSION["last_name"] = $last_name;
+                                $_SESSION["is_admin"] = $is_admin;
+                                $_SESSION["db_connected"] = true;
+                                
+                                // Redirect user to dashboard page
+                                if($is_admin){
+                                    header("location: admin.php");
+                                } else {
+                                    header("location: dashboard.php");
+                                }
+                                exit;
+                            } else{
+                                // Password is not valid, display a generic error message
+                                $login_err = "Invalid email or password.";
                             }
-                        } else{
-                            // Password is not valid, display a generic error message
-                            $login_err = "Invalid email or password.";
                         }
+                    } else{
+                        // Email doesn't exist, display a generic error message
+                        $login_err = "Invalid email or password.";
                     }
                 } else{
-                    // Email doesn't exist, display a generic error message
-                    $login_err = "Invalid email or password.";
+                    $login_err = "Oops! Something went wrong. Please try again later.";
                 }
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
-            }
 
-            // Close statement
-            mysqli_stmt_close($stmt);
+                // Close statement
+                mysqli_stmt_close($stmt);
+            }
         }
     }
     
-    // Close connection
-    mysqli_close($conn);
+    // Close connection if it exists
+    if (isset($conn) && $conn) {
+        mysqli_close($conn);
+    }
 }
 ?>
 
@@ -131,6 +162,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 </div>
                 
                 <?php 
+                // Display database connection notification if needed
+                if(!empty($db_notification)){
+                    echo $db_notification;
+                }
+                
+                // Display login error if any
                 if(!empty($login_err)){
                     echo '<div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
                             <span class="block sm:inline">' . $login_err . '</span>
@@ -171,6 +208,17 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 <div class="mt-6 text-center">
                     <p class="text-gray-600">Don't have an account? <a href="register.php" class="text-blue-600 hover:underline">Create one</a></p>
                 </div>
+                
+                <?php if (!$is_db_connected): ?>
+                <div class="mt-6 p-4 bg-gray-100 rounded-md">
+                    <h3 class="font-medium text-gray-700 mb-2">Demo Credentials</h3>
+                    <p class="text-sm text-gray-600">For presentation purposes, you can use:</p>
+                    <div class="mt-2 p-2 bg-white rounded border border-gray-200">
+                        <p class="text-sm"><strong>Email:</strong> admin@aquasave.com</p>
+                        <p class="text-sm"><strong>Password:</strong> admin123</p>
+                    </div>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </section>
@@ -202,21 +250,34 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                     </ul>
                 </div>
                 <div>
-                    <h4 class="font-medium mb-4">Connect With Us</h4>
-                    <div class="flex space-x-4">
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-twitter"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-instagram"></i></a>
-                        <a href="#" class="text-blue-200 hover:text-white"><i class="fab fa-linkedin-in"></i></a>
-                    </div>
+                    <h4 class="font-medium mb-4">Contact</h4>
+                    <ul class="space-y-2">
+                        <li class="flex items-start">
+                            <i class="fas fa-envelope text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">info@aquasave.com</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-phone text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">+1 (555) 123-4567</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-map-marker-alt text-blue-300 mt-1 mr-2"></i>
+                            <span class="text-blue-200">123 Water St, Earth City, 12345</span>
+                        </li>
+                    </ul>
                 </div>
             </div>
-            <div class="border-t border-blue-700 mt-8 pt-6 text-center">
-                <p class="text-blue-200">&copy; 2023 AquaSave. All rights reserved.</p>
+            <div class="border-t border-blue-700 mt-8 pt-6 text-center text-blue-300">
+                <p>&copy; 2025 AquaSave. All rights reserved.</p>
             </div>
         </div>
     </footer>
 
-    <script src="../Frontend/js/main.js"></script>
+    <script>
+        // Mobile menu toggle
+        document.getElementById('menu-toggle')?.addEventListener('click', function() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+    </script>
 </body>
 </html>

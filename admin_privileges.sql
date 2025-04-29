@@ -146,5 +146,7 @@ END //
 DELIMITER ;
 
 -- Grant admin privileges to the MySQL user
-GRANT ALL PRIVILEGES ON aquasave.* TO 'admin'@'localhost' IDENTIFIED BY 'admin_secure_password';
+-- Create admin user if it doesn't exist
+CREATE USER IF NOT EXISTS 'admin'@'localhost' IDENTIFIED BY 'admin_secure_password';
+GRANT ALL PRIVILEGES ON aquasave.* TO 'admin'@'localhost';
 FLUSH PRIVILEGES;

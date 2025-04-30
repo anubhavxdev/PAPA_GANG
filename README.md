@@ -95,6 +95,13 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 👥 Project Contributors
 
+
+
+
+
+
+To design a smart water conservation platform where users can track and optimize water usage. Users will register to connect their water-consuming devices, while administrators will validate key participants, such as service providers and experts. The system will allow end-users to monitor usage patterns, set conservation goals, and access water-saving tips based on location and individual consumption needs.
+
 Thanks to these amazing people:
 
 [![Contributors](https://contrib.rocks/image?repo=anubhavxdev/PAPA_GANG)](https://github.com/anubhavxdev/PAPA_GANG/graphs/contributors)

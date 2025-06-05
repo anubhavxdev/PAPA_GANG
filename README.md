@@ -1,83 +1,48 @@
+# AquaSave - Smart Water Conservation Platform
 
-# 🌐 Frontend Web Interface
-
-A responsive and interactive frontend web application designed with modularity, modern UI components, and dynamic interactivity. This project is ideal for dashboards, tracking systems, and device or goal-based applications.
-
----
-
-## 🚀 Features
-
-- 🌟 Modern and responsive UI using HTML, CSS, and JavaScript
-- 📊 Dynamic charts for data visualization
-- 🧾 Interactive forms with validation
-- 🧭 Modular structure with dedicated pages (Dashboard, Devices, Goals, Tips)
-- 🧠 User tips and informative content
-- 📝 Registration page with form handling
-- 💡 Clean, scalable, and reusable codebase
+AquaSave is a web application designed to help users track, analyze, and optimize their water usage. It provides tools for monitoring consumption, setting conservation goals, and accessing water-saving tips. The platform features a user-friendly interface, a PHP-based backend, and a MySQL database for data storage.
 
 ---
 
-## 📁 Project Structure
+## 📚 Project Documentation
 
-```
-Frontend/
-│
-├── index.html                 # Landing page
-├── generated-icon.png         # App icon
-│
-├── css/
-│   └── styles.css             # Main stylesheet
-│
-├── js/
-│   ├── main.js                # Core interactions & event handling
-│   ├── forms.js               # Form validation and submission
-│   └── charts.js              # Chart rendering scripts
-│
-└── pages/
-    ├── dashboard.html         # User dashboard with charts and stats
-    ├── devices.html           # List and manage devices
-    ├── goals.html             # Track and display user goals
-    ├── register.html          # User registration form
-    └── tips.html              # Useful tips and suggestions
-```
+For a comprehensive understanding of the project, including its purpose, architecture, features, database schema, and setup instructions, please see the **[PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md)** document.
 
 ---
 
-## 🔧 Getting Started
+## 🚀 Key Features (Summary)
 
-### 1. Clone the Repository
-```bash
-git clone https://github.com/anubhavxdev/PAPA_GANG.git
-cd frontend-project
-```
-
-### 2. Open in Browser
-Simply open `index.html` in your favorite browser.
+- User Registration and Login
+- Personalized Dashboard
+- Device Management (Conceptual)
+- Goal Setting and Tracking
+- Water-Saving Tips
+- Admin Panel for User Management and Statistics
 
 ---
 
 ## 🛠️ Technologies Used
 
-- HTML5
-- CSS3
-- JavaScript (ES6)
-- Chart.js (or similar - based on `charts.js` usage)
+- **Frontend:** HTML5, CSS3 (Tailwind CSS), JavaScript (ES6)
+- **Backend:** PHP
+- **Database:** MySQL
 
 ---
 
-## 📈 Potential Enhancements
+## 🔧 Quick Start
 
-- Add authentication system (login/logout)
-- Integrate with backend (e.g., Node.js/Express or Firebase)
-- Enable QR code scanning and generation
-- Add dark mode and user preferences
-- Improve accessibility (ARIA roles, keyboard nav)
+1.  **Clone the repository:**
+    ```bash
+    git clone https://github.com/anubhavxdev/PAPA_GANG.git
+    cd PAPA_GANG
+    ```
+2.  **Follow the setup instructions** detailed in [PROJECT_OVERVIEW.md](PROJECT_OVERVIEW.md#5-setup-and-installation-instructions) to get the application running locally. This typically involves placing the project in a PHP/MySQL enabled web server environment (like XAMPP, WAMP, MAMP) and ensuring the database is configured.
 
 ---
 
 ## 🤝 Contributing
 
-Feel free to fork the repository and submit pull requests. Feedback and contributions are welcome!
+Contributions are welcome! Please feel free to fork the repository, make improvements, and submit pull requests.
 
 ---
 
@@ -89,20 +54,12 @@ This project is open source and available under the [MIT License](LICENSE).
 
 ## 👨‍💻 Author
 
-**Anubhav Jaiswal**  
-[LinkedIn]([https://linkedin.com/in/your-profile](https://www.linkedin.com/in/anubhavxdev/)) | [GitHub](https://github.com/anubhavxdev)
-
+**Anubhav Jaiswal**
+- [LinkedIn](https://www.linkedin.com/in/anubhavxdev/)
+- [GitHub](https://github.com/anubhavxdev)
 
 ## 👥 Project Contributors
-
-
-
-
-
-
-To design a smart water conservation platform where users can track and optimize water usage. Users will register to connect their water-consuming devices, while administrators will validate key participants, such as service providers and experts. The system will allow end-users to monitor usage patterns, set conservation goals, and access water-saving tips based on location and individual consumption needs.
 
 Thanks to these amazing people:
 
 [![Contributors](https://contrib.rocks/image?repo=anubhavxdev/PAPA_GANG)](https://github.com/anubhavxdev/PAPA_GANG/graphs/contributors)
-
